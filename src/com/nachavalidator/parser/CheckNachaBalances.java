@@ -28,11 +28,11 @@ public class CheckNachaBalances {
 			String entryHash = calculateEntryHash(batch);
 			String totalDebitAmount = calculateAmount(batch, "debit");
 			String totalCreditAmount = calculateAmount(batch, "credit");
-			
+
 			final String objectName = "Batch control record";
 			Boolean error = false;
 			BatchControlRecord controlRecord = batch.getControl();
-			
+
 			if(!controlRecord.getEntryAddendaCount().equals(entryCount)){
 				printIncorrectFieldError(objectName, "entry count", entryCount, controlRecord.getEntryAddendaCount());
 				error = true;
@@ -49,17 +49,17 @@ public class CheckNachaBalances {
 				printIncorrectFieldError(objectName, "credit amount", totalCreditAmount, controlRecord.getTotalCreditAmount());
 				error = true;
 			}
-			
+
 			if(error) System.out.println(controlRecord.toString());
-			
+
 		}
 
 	}
 
 	private static String calculateAmount(Batch batch, String type) {
 		BigInteger totalAmountInt = new BigInteger("0");
-		if(batch.getDetailRecords() != null){
-			for(BatchRecord batchRecord : batch.getDetailRecords()){
+		if(batch.getDetailRecords() != null)
+			for(BatchRecord batchRecord : batch.getDetailRecords())
 				if(batchRecord.getDetailRecord() != null){
 					EntryDetailRecord detailRecord = batchRecord.getDetailRecord();
 					if(getTransactionType(detailRecord.getTransactionCode()) == "credit" && type ==	"credit")
@@ -67,9 +67,7 @@ public class CheckNachaBalances {
 					if(getTransactionType(detailRecord.getTransactionCode()) == "debit" && type ==	"debit")
 						totalAmountInt = totalAmountInt.add(new BigInteger(detailRecord.getAmount()));
 				}
-			}
-		}
-		
+
 		String totalAmount = totalAmountInt.toString();
 		while(totalAmount.length() < 12)
 			totalAmount = "0" + totalAmount;
@@ -82,12 +80,13 @@ public class CheckNachaBalances {
 		case "32": 
 		case "23": 
 		case "33":	return "credit";
-		
+
 		case "27": 
 		case "37": 
 		case "28": 
 		case "38":	return "debit";
 		}
+		System.out.println("Invalid transaction type code found! " + transactionCode);
 		return "Error";
 	}
 
@@ -97,7 +96,7 @@ public class CheckNachaBalances {
 			for(BatchRecord batchRecord : batch.getDetailRecords())
 				if(batchRecord.getDetailRecord() != null)
 					entryHashInt = entryHashInt.add(new BigInteger(batchRecord.getDetailRecord().getReceivingDFIIdentification()));
-		
+
 		String entryHash = entryHashInt.toString();
 		while(entryHash.length() < 10)
 			entryHash = "0" + entryHash;
@@ -148,14 +147,14 @@ public class CheckNachaBalances {
 
 	private static String calculateAmountTotal(Nacha nacha, String type) {
 		BigInteger amountInt = new BigInteger("0");
-		if(nacha.getBatch() != null){
+		if(nacha.getBatch() != null)
 			for(Batch batch : nacha.getBatch()){
 				if(type.equals("debit"))
 					amountInt = amountInt.add(new BigInteger(batch.getControl().getTotalDebitAmount()));
 				if(type.equals("credit"))
 					amountInt = amountInt.add(new BigInteger(batch.getControl().getTotalCreditAmount()));
 			}
-		}
+
 		String amount = amountInt.toString();
 		while(amount.length() < 12)
 			amount = "0" + amount;
@@ -170,7 +169,7 @@ public class CheckNachaBalances {
 				if(batch.getDetailRecords() != null)
 					for(BatchRecord batchRecord : batch.getDetailRecords())
 						entryHashValue = entryHashValue.add(new BigInteger(batchRecord.getDetailRecord().getReceivingDFIIdentification()));
-		
+
 		String entryHash = entryHashValue.toString();
 		while(entryHash.length() < 10)
 			entryHash = "0" + entryHash;
@@ -184,14 +183,13 @@ public class CheckNachaBalances {
 		Integer fiveRecordCount = 0;
 		Integer eightRecordCount = 0;
 
-		if(nacha.getBatch() != null){
+		if(nacha.getBatch() != null)
 			for(Batch batch : nacha.getBatch()){
 				if(batch.getHeader() != null)
 					fiveRecordCount += 1;
 				if(batch.getControl() != null)
 					eightRecordCount += 1;
 			}
-		}
 
 		if(fiveRecordCount != eightRecordCount)
 			System.out.println("Number of five records does not match number of eight records!");
@@ -205,19 +203,16 @@ public class CheckNachaBalances {
 
 	private static String countEntries(Nacha nacha) {
 		Integer entryCount = 0;
-		if(nacha.getBatch() != null){
-			for(Batch batch : nacha.getBatch()){
-				if(batch.getDetailRecords() != null){
+		if(nacha.getBatch() != null)
+			for(Batch batch : nacha.getBatch())
+				if(batch.getDetailRecords() != null)
 					for(BatchRecord batchRecord : batch.getDetailRecords()){
 						if(batchRecord.getDetailRecord() != null)
 							entryCount += 1;
 						if(batchRecord.getAddenda() != null)
 							entryCount += batchRecord.getAddenda().size();
 					}
-				}
 
-			}
-		}
 		String entryCountString = Integer.toString(entryCount);
 
 		while(entryCountString.length() < 8)

@@ -25,23 +25,27 @@ public class ValidateNacha {
 		validateNacha(nacha);
 		checkNachaBalances(nacha);
 	}
-	
+
 	static final String padNineRecord = "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999";
 
 	public static void validateNacha(Nacha nacha) {
-		if(nacha != null){
-			if(nacha.getHeader() != null)
-				validateFileHeader(nacha.getHeader());
-			else System.out.println("File header not found!");
-			if(nacha.getBatch() != null)
-				validateBatch(nacha.getBatch());
-			else System.out.println("Batch records not found!");
-			if(nacha.getControl() != null)
-				validateFileControlRecord(nacha.getControl());
-			if(nacha.getPadRecord() != null)
-				validatePadRecords(nacha.getPadRecord());
-			else System.out.println("File control record (9 record) not found!");
-		}
+		if(nacha == null)
+			System.out.println("No nacha found!");
+		
+		if(nacha.getHeader() != null)
+			validateFileHeader(nacha.getHeader());
+		else System.out.println("File header not found!");
+		
+		if(nacha.getBatch() != null)
+			validateBatch(nacha.getBatch());
+		else System.out.println("Batch records not found!");
+		
+		if(nacha.getControl() != null)
+			validateFileControlRecord(nacha.getControl());
+		else System.out.println("File control record (9 record) not found!");
+		
+		if(nacha.getPadRecord() != null)
+			validatePadRecords(nacha.getPadRecord());
 	}
 
 	private static void validatePadRecords(ArrayList<NinePadRecord> padRecordList) {
@@ -55,9 +59,11 @@ public class ValidateNacha {
 			if(batch.getHeader() != null)
 				validateBatchHeader(batch.getHeader());
 			else System.out.print("Batch missing header record (5 record)!");
+			
 			if(batch.getDetailRecords() != null)
 				validateBatchDetails(batch.getDetailRecords());
 			else System.out.println("Batch without detail records present!");
+			
 			if(batch.getControl() != null)
 				validateBatchControlRecord(batch.getControl());
 			else System.out.println("Batch missing control record (8 record)!");
@@ -69,8 +75,15 @@ public class ValidateNacha {
 		for(BatchRecord batchRecord : detailRecords){
 			if(batchRecord.getDetailRecord() != null)
 				validateEntryDetailRecord(batchRecord.getDetailRecord());
-
 			else System.out.println("Batch without 6 record present!");
+			
+			if(batchRecord.getDetailRecord().getAddendaRecordIndicator().equals("0")
+					&& batchRecord.getAddenda() != null)
+				System.out.println("Addenda record indicator is 0 when 7 records are present!");
+			
+			if(batchRecord.getDetailRecord().getAddendaRecordIndicator().equals("1")
+					&& batchRecord.getAddenda() == null)
+				System.out.println("Addenda record indicator is 1 when 7 records are absent!");
 
 			if(batchRecord.getAddenda() != null)
 				validateAddendaRecordList(batchRecord.getAddenda());
@@ -207,7 +220,7 @@ public class ValidateNacha {
 		if(fileControlRecord.toString().equals(padNineRecord)){ 
 			return;
 		}
-		
+
 		Boolean error = false;
 		final String objectName = "File control record";
 
