@@ -57,11 +57,11 @@ public class ValidateNacha {
 	private static void validateBatch(ArrayList<Batch> batchList) {
 		for(Batch batch : batchList){
 			if(batch.getHeader() != null)
-				validateBatchHeader(batch.getHeader());
+				validateBatchHeader(batch.getHeader(), batch.iatFlag);
 			else System.out.print("Batch missing header record (5 record)!");
 			
 			if(batch.getDetailRecords() != null)
-				validateBatchDetails(batch.getDetailRecords());
+				validateBatchDetails(batch.getDetailRecords(), batch.iatFlag);
 			else System.out.println("Batch without detail records present!");
 			
 			if(batch.getControl() != null)
@@ -71,10 +71,10 @@ public class ValidateNacha {
 
 	}
 
-	private static void validateBatchDetails(ArrayList<BatchRecord> detailRecords) {
+	private static void validateBatchDetails(ArrayList<BatchRecord> detailRecords, boolean iatFlag) {
 		for(BatchRecord batchRecord : detailRecords){
 			if(batchRecord.getDetailRecord() != null)
-				validateEntryDetailRecord(batchRecord.getDetailRecord());
+				validateEntryDetailRecord(batchRecord.getDetailRecord(), iatFlag);
 			else System.out.println("Batch without 6 record present!");
 			
 			if(batchRecord.getDetailRecord().getAddendaRecordIndicator().equals("0")
@@ -86,13 +86,13 @@ public class ValidateNacha {
 				System.out.println("Addenda record indicator is 1 when 7 records are absent!");
 
 			if(batchRecord.getAddenda() != null)
-				validateAddendaRecordList(batchRecord.getAddenda());
+				validateAddendaRecordList(batchRecord.getAddenda(), iatFlag);
 		}
 	}
 
-	private static void validateAddendaRecordList(ArrayList<AddendaRecord> addendaList) {
+	private static void validateAddendaRecordList(ArrayList<AddendaRecord> addendaList, boolean iatFlag) {
 		for(AddendaRecord addendaRecord : addendaList)
-			validateAddendaRecord(addendaRecord);
+			validateAddendaRecord(addendaRecord, iatFlag);
 	}
 
 	private static void validateFileHeader(FileHeader fileHeader){
@@ -123,7 +123,7 @@ public class ValidateNacha {
 
 	}
 
-	private static void validateAddendaRecord(AddendaRecord addendaRecord){
+	private static void validateAddendaRecord(AddendaRecord addendaRecord, boolean iatFlag){
 		Boolean error = false;
 		final String objectName = "Addenda record";
 
@@ -132,9 +132,26 @@ public class ValidateNacha {
 			error = true;
 		}
 
-		if(!addendaRecord.getAddendaTypeCode().equals("05")){
-			printIncorrectFieldError(objectName, "addenda type code", "05", addendaRecord.getAddendaTypeCode());
-			error = true;
+		if(iatFlag){
+			if(!(addendaRecord.getAddendaTypeCode().equals("10") ||
+					addendaRecord.getAddendaTypeCode().equals("11") ||
+					addendaRecord.getAddendaTypeCode().equals("12") ||
+					addendaRecord.getAddendaTypeCode().equals("13") ||
+					addendaRecord.getAddendaTypeCode().equals("14") ||
+					addendaRecord.getAddendaTypeCode().equals("15") ||
+					addendaRecord.getAddendaTypeCode().equals("16") ||
+					addendaRecord.getAddendaTypeCode().equals("17") ||
+					addendaRecord.getAddendaTypeCode().equals("18")
+			)){
+				printIncorrectFieldError(objectName, "addenda type code", "10 through 18", addendaRecord.getAddendaTypeCode());
+				error = true;
+			}
+		}
+		else{
+			if(!addendaRecord.getAddendaTypeCode().equals("05")){
+				printIncorrectFieldError(objectName, "addenda type code", "05", addendaRecord.getAddendaTypeCode());
+				error = true;
+			}
 		}
 
 		if(error) System.out.println(addendaRecord.toString());
@@ -163,7 +180,7 @@ public class ValidateNacha {
 
 	}
 
-	private static void validateBatchHeader(BatchHeader batchHeader){
+	private static void validateBatchHeader(BatchHeader batchHeader, boolean iatFlag){
 		Boolean error = false;
 		final String objectName = "Batch header";
 
@@ -179,10 +196,67 @@ public class ValidateNacha {
 			error = true;
 		}
 
-		if(error) System.out.println(batchHeader.toString());
+/*		if(!batchHeader.getOriginatorStatusCode().equals("1")){
+			printIncorrectFieldError(objectName, "Originator Status Code", "1", batchHeader.getOriginatorStatusCode());
+			error = true;
+		}*/
+
+		//IAT and non-IAT specific validations below
+
+		if(iatFlag){
+			if(!batchHeader.getCompanyName().trim().isEmpty()) {
+				printIncorrectFieldError(objectName, "Filler from 5 to 20", "blanks", batchHeader.getCompanyName());
+				error = true;
+			}
+
+			if(!batchHeader.getForeignExchangeIndicator().equals("FF")){
+				printIncorrectFieldError(objectName, "Foreign Exchange Indicator", "FF", batchHeader.getForeignExchangeIndicator());
+				error = true;
+			}
+
+			if(!batchHeader.getForeignExchangeReferenceIndicator().equals("3")){
+				printIncorrectFieldError(objectName, "Foreign Exchange Reference Indicator", "3", batchHeader.getForeignExchangeReferenceIndicator());
+				error = true;
+			}
+
+			if(!batchHeader.getForeignExchangeReference().trim().isEmpty()) {
+				printIncorrectFieldError(objectName, "Foreign Exchange Reference", "blanks", batchHeader.getForeignExchangeReference());
+				error = true;
+			}
+
+			if(!batchHeader.getStandardEntryClassCode().equals("IAT")){
+				printIncorrectFieldError(objectName, "Standard Entry Class Code", "IAT", batchHeader.getStandardEntryClassCode());
+				error = true;
+			}
+
+			if(!batchHeader.getIsoOriginCurrencyCode().equals("USD")){
+				printIncorrectFieldError(objectName, "ISO Origin Currency Code", "USD", batchHeader.getIsoOriginCurrencyCode());
+				error = true;
+			}
+
+			if(!batchHeader.getIsoDestinationCountryCode().equals("USD")){
+				printIncorrectFieldError(objectName, "ISO Destination Currency Code", "USD", batchHeader.getIsoDestinationCurrencyCode());
+				error = true;
+			}
+
+/*			if(!batchHeader.getSettlementDate().trim().isEmpty()){
+				printIncorrectFieldError(objectName, "Settlement Date", "blanks", batchHeader.getSettlementDate());
+				error = true;
+			}*/
+
+		}
+
+/*		if(!iatFlag){
+			if(!batchHeader.getSettlementDate().isEmpty()){
+				printIncorrectFieldError(objectName, "Filler from 76 to 78", "blanks", batchHeader.getSettlementDate());
+				error = true;
+			}
+		}*/
+
+		if(error) System.out.println(batchHeader.toString(iatFlag));
 	}
 
-	private static void validateEntryDetailRecord(EntryDetailRecord entryDetailRecord){
+	private static void validateEntryDetailRecord(EntryDetailRecord entryDetailRecord, boolean iatFlag){ //TODO: IAT Support
 		Boolean error = false;
 		final String objectName	= "Entry detail record";
 

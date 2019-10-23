@@ -9,5 +9,6 @@ public class Batch {
 	public BatchHeader header;
 	public ArrayList<BatchRecord> detailRecords;
 	public BatchControlRecord control;
+	public boolean iatFlag;
 
 }

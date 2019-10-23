@@ -26,6 +26,7 @@ public class ParseNacha {
 			nacha.lineCount = 0;
 			nacha.batch = new ArrayList<Batch>();
 			nacha.padRecord = new ArrayList<NinePadRecord>();
+			nacha.invalidLengthFlag = false;
 
 			Batch batch = null;
 
@@ -33,13 +34,20 @@ public class ParseNacha {
 			BatchRecord detailRecord = null;
 
 			for(String line; (line = br.readLine()) != null; ){
-				nacha.lineCount += 1;
+
+				if(line.length() == 94)
+					nacha.lineCount += 1;
+				else
+					nacha.invalidLengthFlag = true;
+
 				if(line.startsWith("1"))
 					nacha.header = new FileHeader(line);
 
 				if(line.startsWith("5")){
 					batch = new Batch(); //new object for current batch
-					batch.header = new BatchHeader(line); //parses 5 record
+					String temp = line.substring(50,53);
+					batch.iatFlag = line.substring(50, 53).equals("IAT");
+					batch.header = new BatchHeader(line, batch.iatFlag); //parses 5 record
 					detailList = new ArrayList<>(); //list for 6 and 7 records
 				}
 
@@ -50,7 +58,7 @@ public class ParseNacha {
 
 					//then create object for current set of 6 and 7 records, and parse the 6
 					detailRecord = new BatchRecord();
-					detailRecord.detailRecord = parseDetailRecord(line);					
+					detailRecord.detailRecord = new EntryDetailRecord(line, batch.iatFlag);
 				}
 
 				if(line.startsWith("7"))
@@ -87,10 +95,6 @@ public class ParseNacha {
 			return null;
 		}
 
-	}
-
-	private static EntryDetailRecord parseDetailRecord(String detailRecordString){		
-		return new EntryDetailRecord(detailRecordString);
 	}
 
 	private static ArrayList<AddendaRecord> parseAddendaRecord(BatchRecord currentBatch, String addendaRecordString){

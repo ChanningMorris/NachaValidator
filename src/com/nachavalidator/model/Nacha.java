@@ -12,5 +12,6 @@ public class Nacha {
 	public ArrayList<Batch> batch;
 	public FileControlRecord control;
 	public ArrayList<NinePadRecord> padRecord;
+	public boolean invalidLengthFlag;
 
 }
